@@ -6,7 +6,7 @@ from pathlib import Path
 
 from fastapi import UploadFile
 
-from .config import KEYWORDS_DIR, RESUME_DIR, RSS_RESULTS_DIR, STATE_FILE, ensure_directories
+from .config import KEYWORDS_DIR, REMOVED_JOBS_FILE, RESUME_DIR, RSS_RESULTS_DIR, STATE_FILE, ensure_directories
 
 
 async def save_resume_file(upload_file: UploadFile) -> Path:
@@ -81,3 +81,33 @@ def update_job_state(jobs: list[dict[str, str]]) -> dict[str, object]:
         "last_run_utc": now_utc,
     }
 
+
+def load_removed_job_ids() -> set[str]:
+    if not REMOVED_JOBS_FILE.exists():
+        return set()
+
+    payload = json.loads(REMOVED_JOBS_FILE.read_text(encoding="utf-8"))
+    removed_ids = payload.get("removed_job_ids", [])
+    return {item for item in removed_ids if isinstance(item, str) and item.strip()}
+
+
+def add_removed_job_id(job_id: str) -> int:
+    job_id = job_id.strip()
+    if not job_id:
+        return len(load_removed_job_ids())
+
+    removed_job_ids = load_removed_job_ids()
+    removed_job_ids.add(job_id)
+
+    ensure_directories()
+    REMOVED_JOBS_FILE.write_text(
+        json.dumps(
+            {
+                "removed_job_ids": sorted(removed_job_ids),
+                "updated_at_utc": datetime.now(timezone.utc).isoformat(),
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    return len(removed_job_ids)

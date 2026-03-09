@@ -201,6 +201,25 @@ button:hover {
   font-size: 11px;
 }
 
+.card-actions {
+  margin-top: 10px;
+}
+
+.remove-job-btn {
+  background: #b91c1c;
+  padding: 7px 12px;
+  font-size: 12px;
+}
+
+.remove-job-btn:hover {
+  background: #991b1b;
+}
+
+.remove-job-btn:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
 @media (max-width: 640px) {
   .container {
     padding: 18px 12px 28px;

@@ -12,6 +12,7 @@ RESUME_DIR = INPUT_DIR / "resume"
 KEYWORDS_DIR = INPUT_DIR / "keywords"
 FEEDS_CONFIG_FILE = CONFIG_DIR / "rss_feeds.json"
 STATE_FILE = OUTPUT_DIR / "state.json"
+REMOVED_JOBS_FILE = OUTPUT_DIR / "removed_jobs.json"
 
 
 def ensure_directories() -> None:
@@ -30,4 +31,3 @@ def load_feed_urls() -> list[str]:
 
     feed_urls = data.get("feeds", [])
     return [feed for feed in feed_urls if isinstance(feed, str) and feed.strip()]
-

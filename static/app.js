@@ -7,6 +7,7 @@ const fetchStatus = document.getElementById("fetch-status");
 const jobsFetched = document.getElementById("jobs-fetched");
 const jobsNew = document.getElementById("jobs-new");
 const jobCards = document.getElementById("job-cards");
+let currentJobs = [];
 
 function escapeHtml(value) {
   return String(value || "")
@@ -50,6 +51,7 @@ function renderJobs(jobs) {
         .slice(0, 8)
         .map((keyword) => `<span class="matched-tag">${escapeHtml(keyword)}</span>`)
         .join("");
+      const jobId = escapeHtml(job.id || "");
 
       return `
         <article class="job-card">
@@ -59,10 +61,60 @@ function renderJobs(jobs) {
           <p class="job-meta">${source} | ${published}</p>
           <p class="job-summary">${summary}</p>
           <div class="matched-keywords">${matchedKeywords}</div>
+          <div class="card-actions">
+            <button type="button" class="remove-job-btn" data-job-id="${jobId}">Remove</button>
+          </div>
         </article>
       `;
     })
     .join("");
+
+  attachRemoveHandlers();
+}
+
+function updateDisplayedCounts(jobs) {
+  jobsFetched.textContent = jobs.length;
+  jobsNew.textContent = jobs.filter((job) => job.is_new).length;
+}
+
+async function removeJob(jobId) {
+  const response = await fetch("/api/jobs/remove", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ job_id: jobId }),
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.detail || "Failed to remove job.");
+  }
+}
+
+function attachRemoveHandlers() {
+  const buttons = document.querySelectorAll(".remove-job-btn");
+  buttons.forEach((button) => {
+    button.addEventListener("click", async () => {
+      const jobId = button.dataset.jobId;
+      if (!jobId) {
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "Removing...";
+
+      try {
+        await removeJob(jobId);
+        currentJobs = currentJobs.filter((job) => job.id !== jobId);
+        updateDisplayedCounts(currentJobs);
+        renderJobs(currentJobs);
+        fetchStatus.textContent = "Job card removed permanently. It will stay hidden in future fetches.";
+      } catch (error) {
+        fetchStatus.textContent = error.message;
+        button.disabled = false;
+        button.textContent = "Remove";
+      }
+    });
+  });
 }
 
 async function loadExistingKeywords() {
@@ -116,12 +168,13 @@ fetchJobsButton.addEventListener("click", async () => {
       throw new Error(payload.detail || "Fetching job listings failed.");
     }
 
-    jobsFetched.textContent = payload.fetched_count ?? 0;
-    jobsNew.textContent = payload.new_count ?? 0;
+    currentJobs = payload.jobs || [];
+    updateDisplayedCounts(currentJobs);
     fetchStatus.textContent = `Fetched ${payload.fetched_count} jobs from configured RSS feeds.`;
-    renderJobs(payload.jobs || []);
+    renderJobs(currentJobs);
   } catch (error) {
     fetchStatus.textContent = error.message;
+    currentJobs = [];
     jobsFetched.textContent = "0";
     jobsNew.textContent = "0";
     renderJobs([]);

@@ -8,6 +8,7 @@ Python web app with:
 - frontend job cards with counts for fetched jobs and new jobs since previous run,
 - matching score per job card based on overlap between resume keywords and job post keywords,
 - job cards ordered from highest matching score to lowest,
+- persistent remove button per job card (removed cards are never shown again on future fetches),
 - `input/` and `output/` project directories for stored artifacts.
 
 ## Open In PyCharm
@@ -58,3 +59,4 @@ C:\Codex\resume-watcher-web
 - Extracted keywords are stored in `input/keywords/latest_keywords.json`.
 - Fetched RSS job results are stored in `input/rss_results/`.
 - State for "new since last run" is stored in `output/state.json`.
+- Permanently removed job IDs are stored in `output/removed_jobs.json`.

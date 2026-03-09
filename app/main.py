@@ -3,11 +3,20 @@ from __future__ import annotations
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 from .config import PROJECT_ROOT, ensure_directories, load_feed_urls
 from .keyword_extractor import extract_keywords_from_resume, extract_keywords_from_text
 from .rss_fetcher import fetch_job_listings
-from .storage import load_latest_keywords, save_keywords, save_resume_file, save_rss_results, update_job_state
+from .storage import (
+    add_removed_job_id,
+    load_latest_keywords,
+    load_removed_job_ids,
+    save_keywords,
+    save_resume_file,
+    save_rss_results,
+    update_job_state,
+)
 
 app = FastAPI(title="Resume Watcher Web", version="1.0")
 
@@ -67,6 +76,10 @@ def _score_job_match(resume_keywords: set[str], job_text: str) -> tuple[float, i
     return match_score, matched_count, matched_keywords
 
 
+class RemoveJobRequest(BaseModel):
+    job_id: str
+
+
 @app.post("/api/jobs/fetch")
 def fetch_jobs() -> dict[str, object]:
     feed_urls = load_feed_urls()
@@ -74,6 +87,9 @@ def fetch_jobs() -> dict[str, object]:
         raise HTTPException(status_code=400, detail="No RSS feeds found in config/rss_feeds.json.")
 
     jobs = fetch_job_listings(feed_urls)
+    removed_job_ids = load_removed_job_ids()
+    jobs = [job for job in jobs if job.get("id") not in removed_job_ids]
+
     resume_keywords_payload = load_latest_keywords()
     resume_keywords = {
         keyword.lower()
@@ -101,7 +117,22 @@ def fetch_jobs() -> dict[str, object]:
         "new_count": stats["new_count"],
         "last_run_utc": stats["last_run_utc"],
         "resume_keyword_count": len(resume_keywords),
+        "removed_job_count": len(removed_job_ids),
         "jobs": jobs,
+    }
+
+
+@app.post("/api/jobs/remove")
+def remove_job(request: RemoveJobRequest) -> dict[str, object]:
+    job_id = request.job_id.strip()
+    if not job_id:
+        raise HTTPException(status_code=400, detail="job_id is required.")
+
+    total_removed = add_removed_job_id(job_id)
+    return {
+        "message": "Job card removed and will stay hidden in future fetches.",
+        "removed_job_id": job_id,
+        "removed_job_count": total_removed,
     }
 
 
