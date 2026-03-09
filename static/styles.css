@@ -184,6 +184,26 @@ button:hover {
   margin: 0;
   font-size: 14px;
   line-height: 1.4;
+  max-height: calc(1.4em * 10);
+  overflow-y: auto;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 10px;
+}
+
+.job-summary p {
+  margin: 0 0 6px;
+}
+
+.job-summary p:last-child {
+  margin-bottom: 0;
+}
+
+.job-summary ul,
+.job-summary ol {
+  margin: 0 0 8px 18px;
+  padding: 0;
 }
 
 .matched-keywords {

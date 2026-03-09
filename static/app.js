@@ -18,6 +18,88 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function sanitizeJobHtml(inputHtml) {
+  const allowedTags = new Set(["P", "BR", "STRONG", "EM", "UL", "OL", "LI", "A"]);
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(`<div>${String(inputHtml || "")}</div>`, "text/html");
+  const root = doc.body.firstElementChild;
+
+  function sanitizeUrl(rawHref) {
+    if (!rawHref) {
+      return "";
+    }
+    const trimmed = rawHref.trim();
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("mailto:")) {
+      return trimmed;
+    }
+    return "";
+  }
+
+  function sanitizeNode(node) {
+    const children = Array.from(node.childNodes);
+    for (const child of children) {
+      if (child.nodeType === 3) {
+        continue;
+      }
+
+      if (child.nodeType !== 1) {
+        child.remove();
+        continue;
+      }
+
+      const tagName = child.tagName.toUpperCase();
+      if (!allowedTags.has(tagName)) {
+        const fragment = doc.createDocumentFragment();
+        while (child.firstChild) {
+          fragment.appendChild(child.firstChild);
+        }
+        child.replaceWith(fragment);
+        sanitizeNode(node);
+        continue;
+      }
+
+      const originalHref = tagName === "A" ? child.getAttribute("href") : "";
+      for (const attribute of Array.from(child.attributes)) {
+        child.removeAttribute(attribute.name);
+      }
+
+      if (tagName === "A") {
+        const safeHref = sanitizeUrl(originalHref);
+        if (safeHref) {
+          child.setAttribute("href", safeHref);
+          child.setAttribute("target", "_blank");
+          child.setAttribute("rel", "noopener noreferrer");
+        } else {
+          const fragment = doc.createDocumentFragment();
+          while (child.firstChild) {
+            fragment.appendChild(child.firstChild);
+          }
+          child.replaceWith(fragment);
+          sanitizeNode(node);
+          continue;
+        }
+      }
+
+      sanitizeNode(child);
+    }
+  }
+
+  sanitizeNode(root);
+  const firstParagraph = root.querySelector("p");
+  if (firstParagraph) {
+    return firstParagraph.outerHTML.trim();
+  }
+
+  const fallbackText = (root.textContent || "").trim();
+  if (!fallbackText) {
+    return "";
+  }
+
+  const paragraph = doc.createElement("p");
+  paragraph.textContent = fallbackText;
+  return paragraph.outerHTML;
+}
+
 function renderKeywords(keywords) {
   if (!keywords?.length) {
     keywordsSection.innerHTML = "<p>No keywords extracted yet.</p>";
@@ -42,7 +124,7 @@ function renderJobs(jobs) {
   jobCards.innerHTML = orderedJobs
     .map((job) => {
       const newPill = job.is_new ? `<span class="new-pill">NEW</span>` : "";
-      const summary = escapeHtml((job.summary || "").slice(0, 220));
+      const summaryHtml = sanitizeJobHtml(job.summary || "");
       const published = escapeHtml(job.published || "n/a");
       const source = escapeHtml(job.source || "Unknown source");
       const title = escapeHtml(job.title || "Untitled role");
@@ -61,7 +143,7 @@ function renderJobs(jobs) {
           <p class="score-row"><span class="score-pill">Match score: ${score}%</span> <span class="score-count">Matched keywords: ${matchedCount}</span></p>
           <h3><a href="${link}" target="_blank" rel="noopener noreferrer">${title}</a></h3>
           <p class="job-meta">${source} | ${published}</p>
-          <p class="job-summary">${summary}</p>
+          <div class="job-summary">${summaryHtml}</div>
           <div class="matched-keywords">${matchedKeywords}</div>
           <div class="card-actions">
             <button type="button" class="remove-job-btn" data-job-id="${jobId}">Remove</button>
