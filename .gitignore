@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.log
+.pytest_cache/
+.mypy_cache/
+.idea/
+.venv/
+venv/
+output/state.json
+input/rss_results/*.json
+input/resume/*
+!input/resume/.gitkeep
+input/keywords/*.json
+!input/keywords/.gitkeep

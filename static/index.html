@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Resume Watcher Web</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="hero">
+        <h1>Resume Watcher Web</h1>
+        <p>Version 1.0</p>
+      </header>
+
+      <section class="panel">
+        <h2>Upload Resume</h2>
+        <p>Upload one resume (.txt, .md, .pdf, .docx) to extract keywords.</p>
+        <form id="resume-form">
+          <input id="resume-file" name="file" type="file" accept=".txt,.md,.pdf,.docx" required />
+          <button type="submit">Upload Resume</button>
+        </form>
+        <p id="upload-status" class="status"></p>
+        <div id="keywords-section" class="keywords"></div>
+      </section>
+
+      <section class="panel">
+        <div class="actions">
+          <button id="fetch-jobs-btn" type="button">Fetch Job Listings</button>
+          <p id="fetch-status" class="status"></p>
+        </div>
+        <div class="stats">
+          <p><strong>Jobs fetched:</strong> <span id="jobs-fetched">0</span></p>
+          <p><strong>New since last run:</strong> <span id="jobs-new">0</span></p>
+        </div>
+
+        <h2>Job Listings</h2>
+        <div id="job-cards" class="job-cards"></div>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
+

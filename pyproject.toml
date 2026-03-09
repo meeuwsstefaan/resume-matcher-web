@@ -1,0 +1,17 @@
+[project]
+name = "resume-watcher-web"
+version = "1.0"
+description = "Resume Watcher Web - upload a resume, extract keywords, and fetch jobs from RSS feeds."
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi==0.116.1",
+  "uvicorn[standard]==0.35.0",
+  "feedparser==6.0.11",
+  "python-multipart==0.0.20",
+  "pypdf==5.9.0",
+  "docx2txt==0.9",
+]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"

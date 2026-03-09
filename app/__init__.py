@@ -1,0 +1,2 @@
+"""Resume Watcher Web package."""
+
