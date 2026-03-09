@@ -1,8 +1,8 @@
 {
   "feeds": [
-    "https://www.python.org/jobs/feed/rss/",
     "https://weworkremotely.com/categories/remote-programming-jobs.rss",
-    "https://remoteok.com/remote-dev-jobs.rss"
+    "https://remoteok.com/remote-dev-jobs.rss",
+    "https://www.python.org/jobs/feed/rss/"
   ]
 }
 

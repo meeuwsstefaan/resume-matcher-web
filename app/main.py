@@ -18,6 +18,12 @@ from .storage import (
     update_job_state,
 )
 
+try:
+    import multipart  # noqa: F401
+    _MULTIPART_AVAILABLE = True
+except Exception:
+    _MULTIPART_AVAILABLE = False
+
 app = FastAPI(title="Resume Watcher Web", version="1.0")
 
 STATIC_DIR = PROJECT_ROOT / "static"
@@ -34,27 +40,41 @@ def index() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
 
-@app.post("/api/resume/upload")
-async def upload_resume(file: UploadFile = File(...)) -> dict[str, object]:
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="No resume file selected.")
+if _MULTIPART_AVAILABLE:
 
-    try:
-        resume_path = await save_resume_file(file)
-        keywords = extract_keywords_from_resume(resume_path)
-        saved_keyword_file = save_keywords(resume_filename=resume_path.name, keywords=keywords)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Resume processing failed: {exc}") from exc
+    @app.post("/api/resume/upload")
+    async def upload_resume(file: UploadFile = File(...)) -> dict[str, object]:
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="No resume file selected.")
 
-    return {
-        "message": "Resume uploaded and keywords extracted.",
-        "resume_file": resume_path.name,
-        "keyword_file": str(saved_keyword_file.relative_to(PROJECT_ROOT)),
-        "keyword_count": len(keywords),
-        "keywords": keywords,
-    }
+        try:
+            resume_path = await save_resume_file(file)
+            keywords = extract_keywords_from_resume(resume_path)
+            saved_keyword_file = save_keywords(resume_filename=resume_path.name, keywords=keywords)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Resume processing failed: {exc}") from exc
+
+        return {
+            "message": "Resume uploaded and keywords extracted.",
+            "resume_file": resume_path.name,
+            "keyword_file": str(saved_keyword_file.relative_to(PROJECT_ROOT)),
+            "keyword_count": len(keywords),
+            "keywords": keywords,
+        }
+
+else:
+
+    @app.post("/api/resume/upload")
+    async def upload_resume() -> dict[str, object]:
+        raise HTTPException(
+            status_code=501,
+            detail=(
+                'Resume upload requires multipart form parsing, but "python-multipart" is not installed. '
+                "Install it to enable /api/resume/upload."
+            ),
+        )
 
 
 @app.get("/api/resume/keywords")
@@ -106,6 +126,7 @@ def fetch_jobs() -> dict[str, object]:
         job["match_count"] = matched_count
         job["matched_keywords"] = matched_keywords
 
+    jobs = [job for job in jobs if float(job.get("match_score", 0)) > 0]
     jobs.sort(key=lambda job: (float(job.get("match_score", 0)), int(job.get("match_count", 0))), reverse=True)
     rss_output_file = save_rss_results(jobs)
     stats = update_job_state(jobs)

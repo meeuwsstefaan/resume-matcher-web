@@ -30,12 +30,14 @@ function renderKeywords(keywords) {
 }
 
 function renderJobs(jobs) {
-  if (!jobs?.length) {
+  const nonZeroJobs = (jobs || []).filter((job) => Number(job.match_score || 0) > 0);
+
+  if (!nonZeroJobs.length) {
     jobCards.innerHTML = "<p>No jobs found from current RSS feeds.</p>";
     return;
   }
 
-  const orderedJobs = [...jobs].sort((left, right) => (right.match_score || 0) - (left.match_score || 0));
+  const orderedJobs = [...nonZeroJobs].sort((left, right) => (right.match_score || 0) - (left.match_score || 0));
 
   jobCards.innerHTML = orderedJobs
     .map((job) => {
@@ -73,8 +75,9 @@ function renderJobs(jobs) {
 }
 
 function updateDisplayedCounts(jobs) {
-  jobsFetched.textContent = jobs.length;
-  jobsNew.textContent = jobs.filter((job) => job.is_new).length;
+  const nonZeroJobs = (jobs || []).filter((job) => Number(job.match_score || 0) > 0);
+  jobsFetched.textContent = nonZeroJobs.length;
+  jobsNew.textContent = nonZeroJobs.filter((job) => job.is_new).length;
 }
 
 async function removeJob(jobId) {
