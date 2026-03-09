@@ -6,6 +6,8 @@ Python web app with:
 - backend RSS polling from a separate config file (`config/rss_feeds.json`),
 - resume upload (single file) and keyword extraction,
 - frontend job cards with counts for fetched jobs and new jobs since previous run,
+- matching score per job card based on overlap between resume keywords and job post keywords,
+- job cards ordered from highest matching score to lowest,
 - `input/` and `output/` project directories for stored artifacts.
 
 ## Open In PyCharm
